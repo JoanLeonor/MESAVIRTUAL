@@ -1,0 +1,42 @@
+{
+  "categories": [
+    {
+      "id": "728ba79f-00c8-4b79-8b40-22f6157edcca",
+      "name": "Arma",
+      "icon": ""
+    },
+    {
+      "id": "ec14566e-f58c-45ee-8b31-d0443429c89e",
+      "name": "Monstruo",
+      "icon": ""
+    }
+  ],
+  "images": [
+    {
+      "id": "3d1ceea7-5504-4f50-baf0-bca7be3a0ef1",
+      "name": "Espada",
+      "categoryId": "728ba79f-00c8-4b79-8b40-22f6157edcca",
+      "faceUrl": "/uploads/1780622208186.png",
+      "backfaceUrl": "",
+      "size": {
+        "width": 150,
+        "height": 150
+      },
+      "rotation": 180,
+      "opacity": 1
+    },
+    {
+      "id": "63773947-6e00-4bca-89b2-79fc9946fdd5",
+      "name": "Goblin",
+      "categoryId": "ec14566e-f58c-45ee-8b31-d0443429c89e",
+      "faceUrl": "/uploads/1780622294630.webp",
+      "backfaceUrl": "",
+      "size": {
+        "width": 150,
+        "height": 150
+      },
+      "rotation": 0,
+      "opacity": 1
+    }
+  ]
+}

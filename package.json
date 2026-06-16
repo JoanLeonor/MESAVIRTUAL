@@ -1,0 +1,15 @@
+{
+  "name": "mesa-virtual",
+  "version": "1.0.0",
+  "description": "Aplicación de juegos de mesa virtual en tiempo real",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "socket.io": "^4.7.2",
+    "uuid": "^9.0.1"
+  }
+}
