@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Board - Mesa Virtual</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <script defer src="client.js"></script>
+</head>
+<body>
+    <!-- Paleta de Colores Temporal -->
+    <div class="temp-color-picker">
+        <h4>Tema Temporal</h4>
+        <label>Fondo: <input type="color" id="color-bg" value="#0b0f19"></label>
+        <label>Paneles: <input type="color" id="color-panel" value="#141928"></label>
+        <label>Primario: <input type="color" id="color-primary" value="#6d28d9"></label>
+        <label>Texto: <input type="color" id="color-text" value="#f8fafc"></label>
+    </div>
+
+    <!-- Pantalla de Inicio (Lobby) -->
+    <div id="lobby-screen" class="screen active lobby-layout">
+        
+        <!-- Barra de Navegación Superior -->
+        <header class="top-navbar">
+            <div class="nav-logo-box">Nexus Board</div>
+            
+            <div class="nav-tabs-center" id="main-nav-tabs">
+                <button class="nav-tab active" data-target="tab-inicio">Inicio</button>
+                <button class="nav-tab" data-target="tab-secciones">Secciones</button>
+                <button class="nav-tab" data-target="tab-juegos">Juegos</button>
+                <button class="nav-tab" data-target="tab-personajes">Personajes</button>
+                <button class="nav-tab" data-target="tab-inventario">Inventario</button>
+            </div>
+
+            <div class="user-profile-container">
+                <div class="user-avatar" id="avatar-btn">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Joan" alt="Usuario">
+                </div>
+                <div id="user-dropdown" class="dropdown-menu">
+                    <button class="dropdown-item">⚙️ Configuración</button>
+                    <button class="dropdown-item">🚪 Salir de sesión</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenedor Dinámico de Pestañas -->
+        <main class="lobby-main-body">
+            
+            <!-- 1. PESTAÑA: INICIO -->
+            <div id="tab-inicio" class="tab-pane active glass-panel" style="text-align: center; padding: 40px 20px;">
+                <div class="user-identity" style="margin-bottom: 20px;">
+                    <h1 class="user-name" style="font-size: 2.5rem;">Joan Martínez</h1>
+                    <h3 class="user-nickname" style="color: var(--primary-color);">@joanm</h3>
+                </div>
+                <p style="margin-bottom: 30px; color: var(--text-muted); font-size: 1.1rem;">Bienvenido a tu hub de campañas de rol.</p>
+                
+                <button id="btn-quick-enter" class="btn primary" style="font-size: 1.2rem; padding: 15px 40px; box-shadow: 0 0 20px rgba(16,185,129,0.4);">
+                    🎲 Entrar Rápido a la Mesa Virtual
+                </button>
+            </div>
+
+            <!-- 2. PESTAÑA: SECCIONES -->
+            <div id="tab-secciones" class="tab-pane full-width-panel glass-panel">
+                <h2 class="tab-title">Secciones y Partidas</h2>
+                <div class="action-bar">
+                    <button id="btn-open-create-section" class="btn primary">➕ Crear Nueva Sección</button>
+                    <button id="btn-open-join-section" class="btn secondary">🔗 Unirse a Partida</button>
+                    <button id="btn-open-invite" class="btn secondary">✉️ Invitar Jugadores</button>
+                </div>
+                <div class="history-list">
+                    <h3>Historial de Secciones Creadas / Jugadas</h3>
+                    <div id="history-container" class="history-grid">
+                        <div class="empty-state">No hay partidas recientes. Crea una nueva sección para empezar.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. PESTAÑA: JUEGOS -->
+            <div id="tab-juegos" class="tab-pane full-width-panel glass-panel">
+                <h2 class="tab-title">Mis Juegos</h2>
+                <div class="action-bar">
+                    <button id="btn-open-create-game" class="btn primary">➕ Crear Nuevo Juego</button>
+                </div>
+                <div id="games-container" class="games-grid">
+                    <!-- La cuadrícula se genera por JS -->
+                </div>
+            </div>
+
+            <!-- 4. PESTAÑA: PERSONAJES -->
+            <div id="tab-personajes" class="tab-pane full-width-panel glass-panel">
+                <h2 class="tab-title">Mis Personajes</h2>
+                <div class="action-bar">
+                    <button id="btn-open-create-character" class="btn primary">➕ Crear Nuevo Personaje</button>
+                </div>
+                <div id="characters-container" class="characters-grid">
+                    <!-- Cuadrícula generada por JS -->
+                </div>
+            </div>
+
+            <!-- 5. PESTAÑA: INVENTARIO -->
+            <div id="tab-inventario" class="tab-pane full-width-panel glass-panel">
+                <h2 class="tab-title">Inventario y Archivos Base</h2>
+                
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <!-- Panel de Categorías -->
+                    <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid var(--panel-border);">
+                        <h3 style="color: var(--accent); margin-bottom: 15px; font-family: var(--font-heading);">Categorías</h3>
+                        <div class="action-bar" style="justify-content: flex-start; margin-bottom: 15px;">
+                            <button id="btn-open-create-category" class="btn primary" style="font-size: 0.9rem; padding: 8px 12px;">➕ Nueva Categoría</button>
+                        </div>
+                        <div id="categories-container" style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Generado por JS -->
+                        </div>
+                    </div>
+
+                    <!-- Panel de Imágenes -->
+                    <div style="flex: 3; min-width: 300px;">
+                        <h3 style="color: var(--accent); margin-bottom: 15px; font-family: var(--font-heading);" id="current-category-title">Todas las Imágenes</h3>
+                        <div class="action-bar" style="justify-content: flex-start; margin-bottom: 15px;">
+                            <button id="btn-open-create-image" class="btn primary" style="font-size: 0.9rem; padding: 8px 12px;">📸 Subir Imagen/Asset</button>
+                        </div>
+                        <div id="inventory-images-container" class="inventory-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">
+                            <!-- Generado por JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+        
+        <div class="background-decor"></div>
+        
+        <!-- Footer -->
+        <footer class="lobby-footer">
+            Información general de la página, mapa de sitio
+        </footer>
+    </div>
+
+    <!-- Pantalla de Juego (Oculta por defecto) -->
+    <div id="game-screen" class="screen" style="flex-direction: column; overflow: hidden; background: #000;">
+        
+        <!-- Zona Superior: Tablero y Chat -->
+        <div style="flex: 1; display: flex; position: relative; overflow: hidden;">
+            
+            <main class="workspace-area" style="flex: 1; position: relative; padding: 0;">
+                <div id="room-info" style="position: absolute; top: 15px; left: 15px; z-index: 10; background: rgba(15,23,42,0.8); backdrop-filter: blur(5px); padding: 8px 15px; border-radius: 8px; border: 1px solid var(--panel-border); color: var(--text-main); font-size: 0.9rem; display: flex; align-items: center; gap: 10px;">
+                    <span>Sala: <span id="display-room-code" style="color: var(--primary-color); font-weight: bold; font-family: monospace;"></span></span>
+                    <button id="btn-copy-room" class="btn secondary btn-sm" style="padding: 2px 5px;" title="Copiar código">📋</button>
+                    <button id="btn-open-dm-screen" class="btn secondary btn-sm" style="border-color: #ef4444; color: #ef4444; display: none;">👑 DM</button>
+                </div>
+                <div id="board-container" style="width: 100%; height: 100%; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative;">
+                    <!-- board-layer es relativo para que las piezas absolutas se posicionen respecto a él -->
+                    <div id="board-layer" style="position: relative; width: 100%; height: 100%; pointer-events: none;">
+                        <img id="board-background" style="display:none; width: 100%; height: 100%; object-fit: contain; position: absolute; top:0; left:0; z-index: 1;" draggable="false">
+                        <!-- Las piezas (.board-piece) se inyectarán aquí por JS, con pointer-events: auto; y z-index: 10+ -->
+                    </div>
+                </div>
+            </main>
+
+            <!-- Chat Plegable -->
+            <aside id="chat-panel" class="glass-panel-dark" style="position: absolute; right: -320px; top: 0; bottom: 0; width: 320px; z-index: 100; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; padding: 15px; border-left: 1px solid var(--panel-border); border-radius: 0;">
+                <button id="btn-toggle-chat" class="btn primary" style="position: absolute; left: -45px; top: 20px; width: 45px; height: 45px; border-radius: 8px 0 0 8px; padding: 0; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; z-index: 101; box-shadow: -5px 0 15px rgba(0,0,0,0.5);">💬</button>
+                
+                <div class="panel-section player-list-section" style="margin-bottom: 20px;">
+                    <h3 style="color: var(--accent); margin-bottom: 10px; font-size: 1.1rem;">Jugadores</h3>
+                    <ul id="players-list" style="list-style: none; color: var(--text-muted); font-size: 0.9rem;"></ul>
+                </div>
+                <div class="panel-section chat-section" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                    <h3 style="color: var(--accent); margin-bottom: 10px; font-size: 1.1rem;">Chat</h3>
+                    <div id="chat-messages" class="chat-box" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05);"></div>
+                    <div class="chat-input-area" style="display: flex; gap: 5px;">
+                        <input type="text" id="chat-input" placeholder="Escribe un mensaje..." style="flex: 1; padding: 8px; border-radius: 5px; border: 1px solid var(--panel-border); background: rgba(0,0,0,0.5); color: white;">
+                        <button id="btn-send-chat" class="btn primary btn-sm">Enviar</button>
+                    </div>
+                </div>
+            </aside>
+            
+            <div id="remote-cursors"></div>
+
+            <!-- Menú Contextual (Clic derecho) -->
+            <div id="piece-context-menu" style="display: none; position: absolute; background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 8px; padding: 5px; flex-direction: column; gap: 5px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.8); backdrop-filter: blur(10px);">
+                <button id="ctx-rotate-right" class="btn secondary btn-sm" style="text-align: left;">🔄 Rotar +45°</button>
+                <button id="ctx-rotate-left" class="btn secondary btn-sm" style="text-align: left;">🔄 Rotar -45°</button>
+                <button id="ctx-flip" class="btn secondary btn-sm" style="text-align: left; display: none;">🃏 Voltear</button>
+                <hr style="border-color: var(--panel-border); margin: 2px 0;">
+                <button id="ctx-delete" class="btn secondary btn-sm" style="text-align: left; color: #ef4444;">🗑️ Eliminar</button>
+            </div>
+        </div>
+
+        <!-- Floating Dock (Herramientas del Jugador) -->
+        <div id="floating-dock" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; background: rgba(15,23,42,0.8); backdrop-filter: blur(5px); border: 1px solid var(--panel-border); padding: 10px; border-radius: 12px; z-index: 90; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+            <button class="sidebar-tab btn secondary btn-sm" data-target="panel-dados" id="tab-tool-dice" title="Dados y Ruleta" style="font-size: 1.5rem; padding: 10px; border-radius: 8px;">🎲</button>
+            <button class="sidebar-tab btn secondary btn-sm" data-target="panel-stats" id="tab-tool-stats" title="Atributos" style="font-size: 1.5rem; padding: 10px; border-radius: 8px;">❤️</button>
+            <button class="sidebar-tab btn secondary btn-sm" data-target="panel-notes" id="tab-tool-notes" title="Notas" style="font-size: 1.5rem; padding: 10px; border-radius: 8px;">📝</button>
+            <button class="sidebar-tab btn secondary btn-sm" data-target="panel-inventory" id="tab-tool-inventory" title="Inventario" style="font-size: 1.5rem; padding: 10px; border-radius: 8px;">🎒</button>
+            <button class="sidebar-tab btn secondary btn-sm" data-target="panel-maps" id="tab-tool-maps" title="Mapas" style="font-size: 1.5rem; padding: 10px; border-radius: 8px;">🗺️</button>
+            <hr style="border-color: var(--panel-border); margin: 5px 0;">
+            <button id="btn-back-to-lobby" class="btn primary btn-sm" style="background: #ef4444; border-color: #ef4444; padding: 10px; border-radius: 8px;" title="Salir de la Mesa">✖️</button>
+        </div>
+
+        <!-- Ventanas Flotantes de Herramientas -->
+        <div id="sidebar-content">
+            <!-- Panel Dados y Ruleta -->
+            <div id="panel-dados" class="sidebar-pane floating-tool-window" style="display: none; position: absolute; top: 10%; left: 90px; width: 350px; background: rgba(15,23,42,0.95); backdrop-filter: blur(10px); border: 1px solid var(--panel-border); border-radius: 12px; padding: 20px; z-index: 95; box-shadow: 0 10px 25px rgba(0,0,0,0.8); flex-direction: column; gap: 20px;">
+                <div class="window-header" style="cursor: move; margin-top: -10px; margin-bottom: 10px; padding-bottom: 5px; display: flex; justify-content: flex-end; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <button class="btn-close-floating" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem;">✖</button>
+                </div>
+                <div>
+                    <h3 style="color: var(--accent); margin-bottom: 15px;">Lanzador de Dados</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
+                        <button class="btn secondary btn-dice" data-sides="6">D6</button>
+                        <button class="btn secondary btn-dice" data-sides="8">D8</button>
+                        <button class="btn secondary btn-dice" data-sides="10">D10</button>
+                        <button class="btn secondary btn-dice" data-sides="12">D12</button>
+                        <button class="btn secondary btn-dice" data-sides="20">D20</button>
+                        <button class="btn secondary btn-dice" data-sides="100">D100</button>
+                    </div>
+                    <div id="dice-result" style="font-size: 3rem; text-align: center; font-weight: bold; text-shadow: 0 0 15px var(--primary-color); line-height: 1;">-</div>
+                </div>
+                <div id="container-tool-roulette" style="border-top: 1px solid var(--panel-border); padding-top: 20px;">
+                    <h3 style="color: var(--accent); margin-bottom: 15px;">Ruleta Dinámica</h3>
+                    <input type="text" id="input-roulette" placeholder="Opciones separadas por coma" style="width: 100%; margin-bottom: 15px; padding: 10px; font-size: 1rem;">
+                    <button id="btn-spin-roulette" class="btn primary" style="width: 100%;">Girar Ruleta</button>
+                    <div id="roulette-result" style="margin-top: 20px; text-align: center; font-size: 1.5rem; font-weight: bold; color: var(--text-main);">-</div>
+                </div>
+            </div>
+
+            <!-- Panel Stats -->
+            <div id="panel-stats" class="sidebar-pane floating-tool-window" style="display: none; position: absolute; top: 10%; left: 90px; width: 350px; background: rgba(15,23,42,0.95); backdrop-filter: blur(10px); border: 1px solid var(--panel-border); border-radius: 12px; padding: 20px; z-index: 95; box-shadow: 0 10px 25px rgba(0,0,0,0.8); flex-direction: column;">
+                <div class="window-header" style="cursor: move; margin-top: -10px; margin-bottom: 10px; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <h3 style="color: var(--accent); margin: 0;">Atributos del Jugador</h3>
+                    <button class="btn-close-floating" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem;">✖</button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div id="container-tool-hp" class="stat-counter" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.3); display: flex; justify-content: space-between; align-items: center;">
+                        <label style="color: #fca5a5; font-weight: bold; margin:0;">❤️ Vida</label>
+                        <div style="display: flex; gap: 5px;"><button class="btn secondary" onclick="window.adjStat('hp',-1)">-</button><input type="number" id="stat-hp" value="10" style="width:60px;text-align:center;font-size:1.1rem;"><button class="btn secondary" onclick="window.adjStat('hp',1)">+</button></div>
+                    </div>
+                    <div id="container-tool-mana" class="stat-counter" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(59,130,246,0.3); display: flex; justify-content: space-between; align-items: center;">
+                        <label style="color: #93c5fd; font-weight: bold; margin:0;">💧 Maná</label>
+                        <div style="display: flex; gap: 5px;"><button class="btn secondary" onclick="window.adjStat('mana',-1)">-</button><input type="number" id="stat-mana" value="10" style="width:60px;text-align:center;font-size:1.1rem;"><button class="btn secondary" onclick="window.adjStat('mana',1)">+</button></div>
+                    </div>
+                    <div id="container-tool-stamina" class="stat-counter" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(234,179,8,0.3); display: flex; justify-content: space-between; align-items: center;">
+                        <label style="color: #fde047; font-weight: bold; margin:0;">⚡ Resistencia</label>
+                        <div style="display: flex; gap: 5px;"><button class="btn secondary" onclick="window.adjStat('stamina',-1)">-</button><input type="number" id="stat-stamina" value="10" style="width:60px;text-align:center;font-size:1.1rem;"><button class="btn secondary" onclick="window.adjStat('stamina',1)">+</button></div>
+                    </div>
+                    <div id="container-tool-item-counter" class="stat-counter" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(168,85,247,0.3); display: flex; justify-content: space-between; align-items: center;">
+                        <label style="color: #d8b4fe; font-weight: bold; margin:0;">🧮 Items</label>
+                        <div style="display: flex; gap: 5px;"><button class="btn secondary" onclick="window.adjStat('items',-1)">-</button><input type="number" id="stat-items" value="0" style="width:60px;text-align:center;font-size:1.1rem;"><button class="btn secondary" onclick="window.adjStat('items',1)">+</button></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Notas -->
+            <div id="panel-notes" class="sidebar-pane floating-tool-window" style="display: none; position: absolute; top: 10%; left: 90px; width: 400px; height: 500px; background: rgba(15,23,42,0.95); backdrop-filter: blur(10px); border: 1px solid var(--panel-border); border-radius: 12px; padding: 20px; z-index: 95; box-shadow: 0 10px 25px rgba(0,0,0,0.8); flex-direction: column;">
+                <div class="window-header" style="cursor: move; margin-top: -10px; margin-bottom: 10px; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <h3 style="color: var(--accent); margin: 0;">Bloc de Notas</h3>
+                    <button class="btn-close-floating" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem;">✖</button>
+                </div>
+                <textarea id="game-notes" placeholder="Escribe tus notas de la sesión aquí..." style="flex: 1; width: 100%; resize: none; background: rgba(0,0,0,0.5); color: #e2e8f0; border: 1px solid var(--panel-border); padding: 15px; border-radius: 8px; font-family: sans-serif; line-height: 1.5;"></textarea>
+            </div>
+
+            <!-- Panel Inventario -->
+            <div id="panel-inventory" class="sidebar-pane floating-tool-window" style="display: none; position: absolute; top: 10%; left: 90px; width: 700px; height: 500px; background: rgba(15,23,42,0.95); backdrop-filter: blur(10px); border: 1px solid var(--panel-border); border-radius: 12px; padding: 20px; z-index: 95; box-shadow: 0 10px 25px rgba(0,0,0,0.8); flex-direction: column;">
+                <div class="window-header" style="cursor: move; margin-top: -10px; margin-bottom: 10px; padding-bottom: 5px; display: flex; justify-content: flex-end; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <button class="btn-close-floating" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem;">✖</button>
+                </div>
+                <div id="container-tool-assets" style="display: flex; gap: 40px; height: calc(100% - 30px);">
+                    <div style="flex: 3; display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--panel-border); padding-bottom: 5px;">
+                            <h3 style="color: var(--accent); margin:0;">Inventario Base</h3>
+                            <select id="game-category-select" style="padding: 5px; border-radius: 5px; background: rgba(0,0,0,0.5); color: white; border: 1px solid var(--panel-border);">
+                                <option value="">-- Todas --</option>
+                            </select>
+                        </div>
+                        <div id="game-inventory-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; overflow-y: auto; flex: 1; padding-right: 10px;">
+                            <!-- Cargado vía JS -->
+                        </div>
+                    </div>
+                    <div style="flex: 1; border-left: 1px solid var(--panel-border); padding-left: 20px; display: flex; flex-direction: column; min-width: 200px;">
+                        <h3 style="color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid var(--panel-border); padding-bottom: 5px;">Personajes</h3>
+                        <div id="game-character-grid" style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; padding-right: 5px;">
+                            <!-- Cargado vía JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Mapas -->
+            <div id="panel-maps" class="sidebar-pane floating-tool-window" style="display: none; position: absolute; top: 10%; left: 90px; width: 350px; background: rgba(15,23,42,0.95); backdrop-filter: blur(10px); border: 1px solid var(--panel-border); border-radius: 12px; padding: 20px; z-index: 95; box-shadow: 0 10px 25px rgba(0,0,0,0.8); flex-direction: column;">
+                <div class="window-header" style="cursor: move; margin-top: -10px; margin-bottom: 10px; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <h3 style="color: var(--accent); margin: 0;">Mapas Modulares</h3>
+                    <button class="btn-close-floating" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem;">✖</button>
+                </div>
+                <p style="font-size: 1rem; color: var(--text-muted); margin-bottom: 20px;">Sube o selecciona imágenes para usarlas como mapa de fondo en el tablero.</p>
+                <label class="file-upload-btn" style="display: inline-block; padding: 10px 20px; font-size: 1.1rem; text-align: center;">
+                    🗺️ Subir Fondo Local
+                    <input type="file" id="upload-board" accept="image/*" style="display: none;">
+                </label>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modales Globales -->
+    <!-- Modal: Crear Sección -->
+    <div id="modal-create-section" class="modal-overlay">
+        <div class="modal-content glass-panel">
+            <button class="modal-close">✖</button>
+            <h2 class="tab-title">Crear Nueva Sección</h2>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Nombre de la Mesa / Partida</label>
+                <input type="text" id="input-section-name" placeholder="Ej. Calabozos y Dragones Noche 1" style="margin-bottom: 1rem;">
+                
+                <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Vincular a Juego (Reglas y Herramientas)</label>
+                <select id="select-linked-game" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.5); color: white; border: 1px solid var(--panel-border);">
+                    <option value="">-- Sin Juego Vinculado (Por defecto) --</option>
+                </select>
+            </div>
+            <button id="btn-confirm-create-section" class="btn primary">Crear e Ingresar</button>
+        </div>
+    </div>
+
+    <!-- Modal: Unirse a Partida -->
+    <div id="modal-join-section" class="modal-overlay">
+        <div class="modal-content glass-panel">
+            <button class="modal-close">✖</button>
+            <h2 class="tab-title">Unirse a Partida</h2>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Código de la Sala</label>
+                <input type="text" id="input-join-code" placeholder="Pega el código aquí">
+            </div>
+            <button id="btn-confirm-join-section" class="btn primary">Ingresar a Sala</button>
+        </div>
+    </div>
+
+    <!-- Modal: Invitar -->
+    <div id="modal-invite" class="modal-overlay">
+        <div class="modal-content glass-panel">
+            <button class="modal-close">✖</button>
+            <h2 class="tab-title">Invitar Jugadores</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">Comparte este código para que se unan a tu mesa.</p>
+            <div style="display: flex; gap: 10px; margin-bottom: 1.5rem;">
+                <input type="text" id="input-invite-code" readonly value="---" style="text-align: center; font-weight: bold; font-size: 1.2rem;">
+                <button id="btn-copy-invite-code" class="btn secondary" style="width: auto;">Copiar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Crear/Editar Juego (FASE 5) -->
+    <div id="modal-game" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 650px; max-height: 90vh; overflow-y: auto;">
+            <button class="modal-close">✖</button>
+            <h2 id="modal-game-title" class="tab-title">Crear Nuevo Juego</h2>
+            
+            <div style="display: flex; gap: 15px; margin-bottom: 1.5rem;">
+                <div style="flex-grow: 1;">
+                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; text-align: left;">Nombre del Juego</label>
+                    <input type="text" id="input-game-name" placeholder="Ej. Calabozos y Dragones">
+                </div>
+                <div style="width: 120px;">
+                    <label style="color: var(--text-muted); display: block; margin-bottom: 0.5rem; text-align: left;">Icono</label>
+                    <input type="text" id="input-game-icon" placeholder="🎲" maxlength="2" style="text-align: center; font-size: 1.5rem;">
+                </div>
+            </div>
+
+            <h3 style="text-align: left; color: var(--accent); margin-bottom: 1rem; font-family: var(--font-heading);">Control del DM Master (Permisos de Jugadores)</h3>
+            <div class="tools-grid" style="margin-bottom: 1.5rem;">
+                <label class="tool-toggle" style="border-color: #ef4444;"><input type="checkbox" id="perm-edit-stats" checked> Modificar sus atributos (Vida, Maná, etc.)</label>
+                <label class="tool-toggle" style="border-color: #ef4444;"><input type="checkbox" id="perm-spawn-assets" checked> Traer Fichas/Cartas del Inventario Base</label>
+                <label class="tool-toggle" style="border-color: #ef4444;"><input type="checkbox" id="perm-change-map"> Cambiar el Mapa de la Sala</label>
+                <label class="tool-toggle" style="border-color: #ef4444;"><input type="checkbox" id="perm-spawn-chars" checked> Traer sus Personajes a la Mesa</label>
+            </div>
+
+            <h3 style="text-align: left; color: var(--accent); margin-bottom: 1rem; font-family: var(--font-heading);">Herramientas del Tablero Virtual</h3>
+            <div class="tools-grid">
+                <label class="tool-toggle"><input type="checkbox" id="tool-dice" checked> 🎲 Lanzador de dados (D6-D100)</label>
+                <label class="tool-toggle"><input type="checkbox" id="tool-notes"> 📝 Bloc de notas</label>
+                <label class="tool-toggle"><input type="checkbox" id="tool-hp"> ❤️ Contador de Vida</label>
+                <label class="tool-toggle"><input type="checkbox" id="tool-mana"> 💧 Contador de Maná</label>
+                <label class="tool-toggle"><input type="checkbox" id="tool-stamina"> ⚡ Contador de Resistencia</label>
+                <label class="tool-toggle"><input type="checkbox" id="tool-roulette"> 🎡 Ruleta Dinámica</label>
+                <label class="tool-toggle"><input type="checkbox" id="tool-inventory" checked> 🎒 Inventario de Jugadores</label>
+                <label class="tool-toggle"><input type="checkbox" id="tool-item-counter"> 🧮 Contador de Items y Categorización</label>
+            </div>
+
+            <button id="btn-save-game" class="btn primary" style="margin-top: 2rem; width: 100%;">Guardar Configuración del Juego</button>
+        </div>
+    </div>
+
+    <!-- Modal: Crear/Editar Personaje (FASE 6) -->
+    <div id="modal-character" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 800px; max-height: 90vh; overflow-y: auto; text-align: left;">
+            <button class="modal-close">✖</button>
+            <h2 id="modal-character-title" class="tab-title" style="text-align: center;">Crear Nuevo Personaje</h2>
+            
+            <form id="form-character">
+                <!-- Visual -->
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <div id="char-image-preview" style="width: 150px; height: 150px; border-radius: 50%; border: 3px solid var(--primary-color); margin: 0 auto 1rem auto; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 4rem;">👤</div>
+                    <label class="btn secondary" style="cursor: pointer;">
+                        📸 Subir Imagen del Personaje
+                        <input type="file" id="input-char-image" accept="image/*" style="display: none;">
+                    </label>
+                </div>
+
+                <!-- 1. Información General -->
+                <h3 style="color: var(--accent); margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 5px;">1. Información General</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 2rem;">
+                    <div><label class="form-label">Nombre Completo</label><input type="text" id="char-name" required placeholder="Ej. Elrond Mitrhil"></div>
+                    <div><label class="form-label">Apodo / Alias</label><input type="text" id="char-alias"></div>
+                    <div><label class="form-label">Edad (Real y Aparente)</label><input type="text" id="char-age"></div>
+                    <div><label class="form-label">Fecha / Lugar Nacimiento</label><input type="text" id="char-birth"></div>
+                    <div><label class="form-label">Ocupación / Rol</label><input type="text" id="char-role"></div>
+                    <div><label class="form-label">Especie / Raza</label><input type="text" id="char-race"></div>
+                </div>
+
+                <!-- 2. Apariencia -->
+                <h3 style="color: var(--accent); margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 5px;">2. Apariencia Física</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 2rem;">
+                    <div><label class="form-label">Estructura Corporal</label><input type="text" id="char-body"></div>
+                    <div><label class="form-label">Ojos y Cabello</label><input type="text" id="char-hair-eyes"></div>
+                    <div><label class="form-label">Estilo de Vestimenta</label><input type="text" id="char-clothing"></div>
+                    <div><label class="form-label">Rasgos Distintivos</label><input type="text" id="char-traits"></div>
+                </div>
+
+                <!-- 3. Psicología -->
+                <h3 style="color: var(--accent); margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 5px;">3. Psicología y Personalidad</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 2rem;">
+                    <div><label class="form-label">Virtudes</label><input type="text" id="char-virtues"></div>
+                    <div><label class="form-label">Defectos / Vicios</label><input type="text" id="char-flaws"></div>
+                    <div><label class="form-label">Mayor Temor / Fobia</label><input type="text" id="char-fear"></div>
+                    <div><label class="form-label">Motivación Principal</label><input type="text" id="char-motivation"></div>
+                </div>
+
+                <!-- 4. Trasfondo -->
+                <h3 style="color: var(--accent); margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 5px;">4. Trasfondo y Relaciones</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 2rem;">
+                    <div><label class="form-label">Estado Actual</label><input type="text" id="char-status"></div>
+                    <div><label class="form-label">Aliados Clave</label><input type="text" id="char-allies"></div>
+                    <div><label class="form-label">Enemigos / Rivales</label><input type="text" id="char-enemies"></div>
+                    <div style="grid-column: 1 / -1;"><label class="form-label">Breve Resumen de su Pasado</label><input type="text" id="char-past"></div>
+                </div>
+
+                <!-- 5. Habilidades -->
+                <h3 style="color: var(--accent); margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 5px;">5. Habilidades y Pertenencias</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 2rem;">
+                    <div><label class="form-label">Habilidad Especial / Talento</label><input type="text" id="char-skills"></div>
+                    <div><label class="form-label">Debilidad Física/Mental</label><input type="text" id="char-weakness"></div>
+                </div>
+
+                <div style="text-align: center;">
+                    <button type="submit" id="btn-save-character" class="btn primary" style="width: 100%; font-size: 1.2rem; padding: 15px;">Guardar Personaje</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Crear/Editar Categoría -->
+    <div id="modal-category" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 400px;">
+            <button class="modal-close">✖</button>
+            <h2 id="modal-category-title" class="tab-title">Nueva Categoría</h2>
+            <form id="form-category">
+                <input type="hidden" id="cat-id">
+                <div style="margin-bottom: 1rem;">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" id="cat-name" required placeholder="Ej. Cartas de Hechizo">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="form-label">Icono (Emoji)</label>
+                    <input type="text" id="cat-icon" placeholder="🃏" maxlength="2" style="text-align: center; font-size: 2rem;">
+                </div>
+                <button type="submit" class="btn primary" style="width: 100%;">Guardar Categoría</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Subir/Editar Imagen (Asset) -->
+    <div id="modal-image" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 600px; max-height: 90vh; overflow-y: auto; text-align: left;">
+            <button class="modal-close">✖</button>
+            <h2 id="modal-image-title" class="tab-title" style="text-align: center;">Subir Asset</h2>
+            <form id="form-image">
+                <input type="hidden" id="img-id">
+                
+                <div style="margin-bottom: 1rem;">
+                    <label class="form-label">Nombre del Elemento</label>
+                    <input type="text" id="img-name" required placeholder="Ej. Dragón Rojo">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 1.5rem;">
+                    <div style="text-align: center;">
+                        <label class="form-label">Cara (Frente)</label>
+                        <div id="img-face-preview" style="width: 100%; height: 120px; background: rgba(0,0,0,0.3); border: 2px dashed var(--primary-color); border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                            <span>Sin Imagen</span>
+                        </div>
+                        <label class="btn secondary btn-sm" style="cursor: pointer; display: inline-block;">
+                            Subir Frente
+                            <input type="file" id="input-img-face" accept="image/*" style="display: none;">
+                        </label>
+                        <input type="hidden" id="img-face-url">
+                    </div>
+                    <div style="text-align: center;">
+                        <label class="form-label">Contracara (Dorso - Opcional)</label>
+                        <div id="img-back-preview" style="width: 100%; height: 120px; background: rgba(0,0,0,0.3); border: 2px dashed var(--panel-border); border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                            <span>Sin Dorso</span>
+                        </div>
+                        <label class="btn secondary btn-sm" style="cursor: pointer; display: inline-block;">
+                            Subir Dorso
+                            <input type="file" id="input-img-back" accept="image/*" style="display: none;">
+                        </label>
+                        <input type="hidden" id="img-back-url">
+                    </div>
+                </div>
+
+                <h3 style="color: var(--accent); margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 5px;">Propiedades Base</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 1.5rem;">
+                    <div>
+                        <label class="form-label">Ancho (px)</label>
+                        <input type="number" id="img-width" value="150" min="10">
+                    </div>
+                    <div>
+                        <label class="form-label">Alto (px)</label>
+                        <input type="number" id="img-height" value="150" min="10">
+                    </div>
+                    <div>
+                        <label class="form-label">Rotación Inicial (grados)</label>
+                        <input type="number" id="img-rotation" value="0">
+                    </div>
+                    <div>
+                        <label class="form-label">Opacidad (0.1 a 1.0)</label>
+                        <input type="number" id="img-opacity" value="1.0" min="0.1" max="1.0" step="0.1">
+                    </div>
+                </div>
+
+                <h3 style="color: var(--accent); margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 5px;">Asignación</h3>
+                <div style="margin-bottom: 2rem;">
+                    <label class="form-label">Categoría</label>
+                    <select id="img-category" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.5); color: white; border: 1px solid var(--panel-border);">
+                        <option value="">-- Sin Categoría --</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn primary" style="width: 100%; font-size: 1.2rem; padding: 15px;">Guardar Asset</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,6 @@
+node_modules/
+public/uploads/*
+!public/uploads/1780622208186.png
+!public/uploads/1780622294630.webp
+.DS_Store
+*.log
